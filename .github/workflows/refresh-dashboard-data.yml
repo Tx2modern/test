@@ -28,8 +28,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install Fabric client libraries (only if secrets are configured)
-        if: ${{ secrets.FABRIC_CLIENT_SECRET != '' }}
+        env:
+          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
         run: |
+          if [ -z "$FABRIC_CLIENT_SECRET" ]; then
+            echo "FABRIC_CLIENT_SECRET not set — skipping ODBC driver setup (mock mode)."
+            exit 0
+          fi
           sudo apt-get update
           sudo apt-get install -y unixodbc unixodbc-dev
           curl -sSL -O https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
