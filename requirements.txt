@@ -1,0 +1,6 @@
+# Only needed once FABRIC_* secrets are configured and export_lakehouse_data.py
+# switches from MOCK to LIVE mode. Mock mode uses only the Python standard library.
+# The GitHub Actions workflow installs these conditionally — see
+# .github/workflows/refresh-dashboard-data.yml.
+pyodbc
+azure-identity

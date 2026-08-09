@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morning Oil Brief — Test Dashboard</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="page-header">
+  <div>
+    <h1>Morning Oil Brief</h1>
+    <p class="subtitle">Fabric Lakehouse market data · test dashboard</p>
+  </div>
+  <div id="status" class="status-badge">Loading…</div>
+</header>
+
+<main>
+  <section id="curve-section">
+    <h2>Forward Curves</h2>
+    <div id="curve-grid" class="grid"></div>
+  </section>
+
+  <section id="daily-close-section">
+    <h2>Daily Close Trends (60 days)</h2>
+    <div id="daily-close-grid" class="grid"></div>
+  </section>
+</main>
+
+<footer>
+  <p>Data source: Microsoft Fabric Lakehouse <code>lh_morningoilbrief</code>, exported on a daily schedule via GitHub Actions.</p>
+</footer>
+
+<script src="assets/dashboard.js"></script>
+</body>
+</html>
