@@ -95,7 +95,9 @@ function renderCurves(rows) {
     (byCommodity[row.commodity] ??= []).push(row);
   }
 
-  for (const [commodity, series] of Object.entries(byCommodity)) {
+  for (const [commodity, allSnapshots] of Object.entries(byCommodity)) {
+    const latestDate = allSnapshots.reduce((max, r) => (r.as_of_date > max ? r.as_of_date : max), allSnapshots[0].as_of_date);
+    const series = allSnapshots.filter((r) => r.as_of_date === latestDate);
     series.sort((a, b) => a.tenor - b.tenor);
     const prices = series.map((r) => r.price);
     const front = series[0];
