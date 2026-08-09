@@ -5,7 +5,10 @@ Lakehouse SQL analytics endpoint to data/*.json for the static dashboard.
 
 Mode is chosen automatically:
   - LIVE mode  if FABRIC_SQL_ENDPOINT, FABRIC_DATABASE, FABRIC_TENANT_ID,
-               FABRIC_CLIENT_ID and FABRIC_CLIENT_SECRET are all set.
+               FABRIC_CLIENT_ID and FABRIC_CLIENT_CERTIFICATE are all set.
+               FABRIC_CLIENT_CERTIFICATE holds a PEM containing both the
+               service principal's private key and its certificate (the
+               tenant blocks client secrets, so auth is certificate-based).
   - MOCK mode  otherwise. Generates data matching the real table schemas so
                the dashboard can be built and demoed before the Entra ID
                service principal exists (see handoff doc's manual prerequisites).
@@ -28,7 +31,7 @@ FABRIC_ENV_VARS = [
     "FABRIC_DATABASE",
     "FABRIC_TENANT_ID",
     "FABRIC_CLIENT_ID",
-    "FABRIC_CLIENT_SECRET",
+    "FABRIC_CLIENT_CERTIFICATE",
 ]
 
 DAILY_CLOSE_TICKERS = [
@@ -66,15 +69,17 @@ def fabric_env_present():
 def fetch_live(table_name):
     """Query a table from the Fabric Lakehouse SQL analytics endpoint."""
     import pyodbc
-    from azure.identity import ClientSecretCredential
+    from azure.identity import CertificateCredential
 
     endpoint = os.environ["FABRIC_SQL_ENDPOINT"]
     database = os.environ["FABRIC_DATABASE"]
     tenant_id = os.environ["FABRIC_TENANT_ID"]
     client_id = os.environ["FABRIC_CLIENT_ID"]
-    client_secret = os.environ["FABRIC_CLIENT_SECRET"]
+    certificate_pem = os.environ["FABRIC_CLIENT_CERTIFICATE"].encode()
 
-    credential = ClientSecretCredential(tenant_id, client_id, client_secret)
+    credential = CertificateCredential(
+        tenant_id, client_id, certificate_data=certificate_pem
+    )
     token = credential.get_token("https://database.windows.net/.default")
     token_bytes = token.token.encode("utf-16-le")
     token_struct = len(token_bytes).to_bytes(4, "little") + token_bytes
@@ -160,7 +165,7 @@ def generate_mock_futures_curve(as_of):
 def write_json(filename, mode, rows):
     os.makedirs(DATA_DIR, exist_ok=True)
     payload = {
-        "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "mode": mode,
         "row_count": len(rows),
         "rows": rows,

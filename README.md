@@ -8,12 +8,17 @@ Live: https://tx2modern.github.io/test/
 
 ## Status
 
-**Currently running on mock data.** The Entra ID service principal for the
-Fabric SQL analytics endpoint hasn't been provisioned yet, so
-`scripts/export_lakehouse_data.py` generates sample data matching the real
-table schemas instead. The dashboard shows a "Sample data" badge whenever
-it's reading mock data. See [handoff.md](#) (original planning doc) for the
-full architecture.
+The Entra ID service principal (`morning-oil-brief-dashboard`) is registered
+and has Viewer access to the `MorningOilBrief` workspace. Authentication is
+**certificate-based**, not a client secret — this tenant has a policy
+blocking client secret creation, so the service principal authenticates with
+a self-signed certificate instead (which Microsoft recommends anyway).
+
+Until the five `FABRIC_*` secrets are all present,
+`scripts/export_lakehouse_data.py` generates mock data matching the real
+table schemas. The dashboard shows a "Sample data" badge whenever it's
+reading mock data. See [handoff.md](#) (original planning doc) for the full
+architecture.
 
 ## How it works
 
@@ -29,24 +34,32 @@ full architecture.
 
 ## Switching to live Fabric data
 
-Once the Entra ID service principal exists (see manual prerequisites below),
-add these as encrypted repo secrets (Settings → Secrets and variables →
-Actions) and the next run switches to LIVE mode automatically:
+These five encrypted repo secrets (Settings → Secrets and variables →
+Actions) switch the export script to LIVE mode automatically once all are
+present:
 
 - `FABRIC_SQL_ENDPOINT` — the Lakehouse's SQL analytics endpoint hostname
 - `FABRIC_DATABASE` — the Lakehouse database name (e.g. `lh_morningoilbrief`)
 - `FABRIC_TENANT_ID`
 - `FABRIC_CLIENT_ID`
-- `FABRIC_CLIENT_SECRET`
+- `FABRIC_CLIENT_CERTIFICATE` — a PEM containing both the service
+  principal's private key and its certificate (not a client secret — this
+  tenant blocks those)
 
-### Manual prerequisites (Azure/Fabric admin access required)
+### Rotating the certificate
 
-- [ ] Register an Entra ID app / service principal.
-- [ ] Grant it Viewer access to the `MorningOilBrief` Fabric workspace (or
-      the `lh_morningoilbrief` Lakehouse specifically).
-- [ ] Retrieve the SQL analytics endpoint connection string from the
-      Lakehouse's Settings in the Fabric UI.
-- [ ] Add the five secrets above to this repo.
+The self-signed cert (`CN=morning-oil-brief-dashboard`) is valid 2 years from
+issuance. To rotate: generate a new one, upload the public half to the app
+registration's **Certificates & secrets → Certificates** tab, then update
+the `FABRIC_CLIENT_CERTIFICATE` secret with the new combined private
+key + certificate PEM.
+
+```bash
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 730 -nodes -subj "/CN=morning-oil-brief-dashboard"
+cat key.pem cert.pem > combined.pem
+gh secret set FABRIC_CLIENT_CERTIFICATE --repo Tx2modern/test < combined.pem
+shred -u key.pem combined.pem   # or `rm` if shred isn't available
+```
 
 ## Local development
 

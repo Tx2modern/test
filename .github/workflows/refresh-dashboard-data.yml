@@ -29,10 +29,10 @@ jobs:
 
       - name: Install Fabric client libraries (only if secrets are configured)
         env:
-          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          FABRIC_CLIENT_CERTIFICATE: ${{ secrets.FABRIC_CLIENT_CERTIFICATE }}
         run: |
-          if [ -z "$FABRIC_CLIENT_SECRET" ]; then
-            echo "FABRIC_CLIENT_SECRET not set — skipping ODBC driver setup (mock mode)."
+          if [ -z "$FABRIC_CLIENT_CERTIFICATE" ]; then
+            echo "FABRIC_CLIENT_CERTIFICATE not set — skipping ODBC driver setup (mock mode)."
             exit 0
           fi
           sudo apt-get update
@@ -49,7 +49,7 @@ jobs:
           FABRIC_DATABASE: ${{ secrets.FABRIC_DATABASE }}
           FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
           FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
-          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          FABRIC_CLIENT_CERTIFICATE: ${{ secrets.FABRIC_CLIENT_CERTIFICATE }}
         run: python3 scripts/export_lakehouse_data.py
 
       - name: Stage site (exclude repo internals from the published output)
