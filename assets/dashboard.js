@@ -86,18 +86,29 @@ function renderDailyClose(rows) {
   }
 }
 
-function renderCurves(rows) {
+function availableCurveDates(rows) {
+  return [...new Set(rows.map((r) => r.as_of_date))].sort().reverse();
+}
+
+function populateDatePicker(rows, onChange) {
+  const select = document.getElementById("curve-date");
+  const dates = availableCurveDates(rows);
+  select.innerHTML = dates.map((d) => `<option value="${d}">${d}</option>`).join("");
+  select.addEventListener("change", () => onChange(select.value));
+  return dates[0];
+}
+
+function renderCurves(rows, selectedDate) {
   const grid = document.getElementById("curve-grid");
   grid.innerHTML = "";
 
+  const snapshot = rows.filter((r) => r.as_of_date === selectedDate);
   const byCommodity = {};
-  for (const row of rows) {
+  for (const row of snapshot) {
     (byCommodity[row.commodity] ??= []).push(row);
   }
 
-  for (const [commodity, allSnapshots] of Object.entries(byCommodity)) {
-    const latestDate = allSnapshots.reduce((max, r) => (r.as_of_date > max ? r.as_of_date : max), allSnapshots[0].as_of_date);
-    const series = allSnapshots.filter((r) => r.as_of_date === latestDate);
+  for (const [commodity, series] of Object.entries(byCommodity)) {
     series.sort((a, b) => a.tenor - b.tenor);
     const prices = series.map((r) => r.price);
     const front = series[0];
@@ -141,7 +152,8 @@ async function main() {
       loadJson("data/yf_futures_curve.json"),
     ]);
     setStatus(dailyClose.mode, dailyClose.generated_at);
-    renderCurves(futuresCurve.rows);
+    const latestDate = populateDatePicker(futuresCurve.rows, (date) => renderCurves(futuresCurve.rows, date));
+    renderCurves(futuresCurve.rows, latestDate);
     renderDailyClose(dailyClose.rows);
   } catch (err) {
     const badge = document.getElementById("status");
